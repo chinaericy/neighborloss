@@ -1,0 +1,23 @@
+
+def getNeighborDiffNum(im,kernelSize=3):#返回的结果为与邻域不同的个数
+    kernel=np.ones((kernelSize,kernelSize),dtype=np.int) #设置卷积的大小
+    conv=signal.convolve2d(im,kernel,boundary='symm',mode='same')
+    num=np.where(im==0,conv,kernelSize*kernelSize-conv)
+    num=np.float32(num)
+    return num
+def neighborLoss(label,predict,imgHeight,imgWidth):
+    pre=tf.nn.softmax(predict)
+    pre=tf.argmax(pre,3) 
+    
+    im=tf.squeeze(pre,0) #压缩第一维度
+    im=tf.cast(im,tf.uint8)#转成图像
+    weight=tf.py_func(getNeighborDiffNum,[im,NeighSize], tf.float32)#调函数得到与邻域不同的个数
+    weight=weight/(NeighSize*NeighSize-1)*8 #归一化
+    weight=weight*k+1
+    #交叉熵乘以权重   
+    loss=tf.nn.sparse_softmax_cross_entropy_with_logits(logits=predict,labels=label)*weight
+    
+    loss=tf.reduce_mean(loss)
+    
+
+    return loss
